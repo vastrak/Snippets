@@ -3,17 +3,23 @@ package com.vastrak.datetime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
+import java.time.Period;
 import java.time.Year;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -76,7 +82,7 @@ public class DateTimeAPITest {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss.SS"); // 04/07/2019 11:53:53.87
 		String text = zonedDateTime.format(formatter);
 		LocalDateTime localDateTime = LocalDateTime.parse(text, formatter);
-		
+
 		logger.info("formatter : " + text); // 04/07/2019 11:53:53.87
 
 		assertThat(localDateTime.toLocalDate()).isEqualTo(zonedDateTime.toLocalDate());
@@ -86,7 +92,6 @@ public class DateTimeAPITest {
 		assertThat(localDateTime.getSecond()).isEqualTo(zonedDateTime.getSecond());
 
 	}
-
 
 	@Test
 	public void test004_LocalDateTime() {
@@ -126,10 +131,176 @@ public class DateTimeAPITest {
 		logger.info("Time" + localTime);
 		logger.info("TimeOf " + localTimeOf);
 		logger.info("TimeParse " + localTimeParse);
- 
+
 		logger.info("Year " + year);
 		logger.info("YearMonth " + yearMonth);
 
+	}
+
+	@Test
+	public void test004_Instant() {
+
+		// This class is immutable and thread-safe.
+		// Output format is ISO-8601
+		// Parse into an Instant
+		Instant instantBorn = Instant.parse("2009-03-17T16:00:00.00Z"); // 2009-03-17T16:00:00Z
+
+		Instant instantPlus = instantBorn.plus(Duration.ofHours(5).plusMinutes(4)); // 2009-03-17T21:04:00Z
+		Instant instantMinus = instantBorn.minus(Period.ofWeeks(3).minusDays(2)); // 2009-02-26T16:00:00Z
+
+		Instant calculatedInstantPlus = Instant.parse("2009-03-17T21:04:00Z");
+		Instant calculatedInstantMinus = Instant.parse("2009-02-26T16:00:00Z");
+
+		assertThat(instantPlus).isEqualTo(calculatedInstantPlus);
+		assertThat(instantMinus).isEqualTo(calculatedInstantMinus);
+
+		logger.info("Instant: " + instantBorn + ": plus 5 hours 4 min. " + instantPlus);
+		logger.info("Instant: " + instantBorn + ": minus 3 weeks and 2 days " + instantMinus);
+
+	}
+
+	@Test
+	public void test005_DurationBetweenTwoInstants() {
+
+		// A Duration measures an amount of time using time-based values (seconds,
+		// nanoseconds).
+		// A Period uses date-based values (years, months, days)
+
+		Instant a = Instant.parse("2007-12-03T10:15:30.00Z");
+		Instant b = Instant.parse("2007-12-03T10:25:15.00Z"); // a + 9'45"
+		Duration gapExpected = Duration.ofSeconds(60 * 9).plus(45, ChronoUnit.SECONDS);
+		Duration gap = Duration.between(a, b);
+
+		long minutes = Duration.between(a, b).toMinutes(); // truncate seconds // 9'
+		long milli = Duration.between(a, b).toMillis(); // 585000
+
+		assertThat(gap).isEqualByComparingTo(gapExpected);
+
+		logger.info("Gap minutes: " + minutes + ", milliseconds  " + milli);
+	}
+
+	@Test
+	public void test006_ChronoUnitBetweenTwoInstants() {
+
+		// The ChronoUnit enum, defines the units used to measure time.
+		// The ChronoUnit.between method is useful when you want to measure an amount
+		// of time in a single unit of time only, such as days or seconds.
+
+		Instant a = Instant.parse("2007-12-03T10:15:30.00Z");
+		Instant b = Instant.parse("2007-12-03T10:25:15.00Z"); // a + 9'45"
+		Duration gapExpected = Duration.ofSeconds(60 * 9).plus(45, ChronoUnit.SECONDS);
+		long gapm = ChronoUnit.MILLIS.between(a, b);
+		long gaps = ChronoUnit.SECONDS.between(a, b); // gapm * 1000
+
+		assertThat(gapm).isEqualTo(gapExpected.toMillis()).isEqualTo(gaps * 1000);
+
+	}
+
+	@Test
+	public void test008_PeriodBetweenTwoLocalDate() {
+
+		// To define an amount of time with date-based values (years, months, days),
+		// use the Period class. The Period class provides various get methods,
+		// such as getMonths, getDays, and getYears, so that you can extract the
+		// amount of time from the period.
+
+		LocalDate today = LocalDate.parse("2019-07-07");
+		LocalDate yesterday = LocalDate.of(1986, Month.APRIL, 3);
+
+		Period p = Period.between(yesterday, today); // 33 years, 3 months, 4 days
+		long p2 = ChronoUnit.DAYS.between(yesterday, today); // 12148 days
+
+		assertThat(p.getYears()).isEqualTo(33L);
+		assertThat(p.getMonths()).isEqualTo(3L);
+		assertThat(p.getDays()).isEqualTo(4L);
+		assertThat(p2).isEqualTo(12148L);
+
+	}
+
+	@Test
+	public void test009_convertLocalDateTimeToInstant() {
+
+		LocalDateTime dateTime = LocalDateTime.of(2017, Month.MARCH, 07, 10, 55); // 2017/03/07 10:55;
+		Instant instant = dateTime.atZone(ZoneId.of("GMT+02:00")).toInstant();
+
+		assertThat(instant.toString()).isEqualTo("2017-03-07T08:55:00Z");
+	}
+
+	@Test
+	public void test010_convertInstantToLocalDateTime() {
+
+		// 2017/03/07 10:55;
+		Instant instant = LocalDateTime.of(2017, Month.MARCH, 07, 10, 55).atZone(ZoneId.of("GMT+02:00")).toInstant();
+		LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.of("GMT+02:00"));
+
+		assertThat(instant.getNano()).isEqualTo(localDateTime.getNano());
+
+	}
+	
+	/**
+	 * Generates a sequence of LOCAL, adding a number of minutes to a LOCAL.
+	 * LocalDateTime + minutes[0], LocalDateTime + minutes[1], ... 
+	 * 
+	 * @param start   LocalDateTime to start adding minutes.
+	 * @param minutes Array of Integer with the minutes to add to LocalDateTime
+	 * @return Set of LocalDateTime
+	 */
+	private Set<LocalDateTime> dateTimePlusArray(LocalDateTime start, int[] minutes) {
+
+		if (minutes == null || start == null) {
+			return null;
+		}
+		Set<LocalDateTime> timeSet = null;
+		for (int i = 0; i < minutes.length; i++) {
+			if (timeSet == null) {
+				timeSet = new HashSet<>();
+			}
+			Instant instant = start.atZone(ZoneId.of("GMT+02:00")).toInstant();
+			timeSet.add(LocalDateTime.ofInstant(instant.plus(minutes[i], ChronoUnit.MINUTES), ZoneId.of("GMT+02:00")));
+		}
+
+		return timeSet;
+	}
+
+	@Test
+	public void test011_DateTimePlusArray() {
+
+		// start DateTime
+		LocalDateTime localDateTime = LocalDateTime.parse("2019-03-13T16:00:00");
+		// minutes to add
+		int[] minutes = { 1, 5, 10, 20, 30, 40 };
+		Set<LocalDateTime> set = dateTimePlusArray(localDateTime, minutes);
+
+		// expected!
+		LocalDateTime next1 = LocalDateTime.parse("2019-03-13T16:01:00");
+		LocalDateTime next2 = LocalDateTime.parse("2019-03-13T16:05:00");
+		LocalDateTime next3 = LocalDateTime.parse("2019-03-13T16:10:00");
+		LocalDateTime next4 = LocalDateTime.parse("2019-03-13T16:20:00");
+		LocalDateTime next5 = LocalDateTime.parse("2019-03-13T16:30:00");
+		LocalDateTime next6 = LocalDateTime.parse("2019-03-13T16:40:00");
+
+		// check!
+		assertThat(set).isNotNull().contains(next1, next2, next3, next4, next5, next6).hasSize(6);
+		assertThat(dateTimePlusArray(localDateTime, null)).isNull();
+		int[] v = {};
+		assertThat(dateTimePlusArray(localDateTime, v)).isNull();
+
+	}
+
+	@Test
+	public void test012_DateTimePlusArrayNullCases() {
+
+		LocalDateTime localDateTimeNull = null;
+		LocalDateTime localDateTimeNow = LocalDateTime.now();
+		int[] minutesEmpty = {};
+		int[] minutes = { 1 };
+
+		assertThat(dateTimePlusArray(localDateTimeNull, null)).isNull();
+		assertThat(dateTimePlusArray(localDateTimeNull, minutesEmpty)).isNull();
+		assertThat(dateTimePlusArray(localDateTimeNull, minutes)).isNull();
+
+		assertThat(dateTimePlusArray(localDateTimeNow, null)).isNull();
+		assertThat(dateTimePlusArray(localDateTimeNow, minutesEmpty)).isNull();
 	}
 
 }
