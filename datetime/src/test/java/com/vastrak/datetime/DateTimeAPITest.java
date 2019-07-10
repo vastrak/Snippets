@@ -16,9 +16,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -86,7 +89,6 @@ public class DateTimeAPITest {
 		logger.info("formatter : " + text); // 04/07/2019 11:53:53.87
 
 		assertThat(localDateTime.toLocalDate()).isEqualTo(zonedDateTime.toLocalDate());
-		assertThat(localDateTime.toLocalTime()).isNotEqualTo(zonedDateTime.toLocalTime()); // <- isNotEqualTo!
 		assertThat(localDateTime.getHour()).isEqualTo(zonedDateTime.getHour());
 		assertThat(localDateTime.getMinute()).isEqualTo(zonedDateTime.getMinute());
 		assertThat(localDateTime.getSecond()).isEqualTo(zonedDateTime.getSecond());
@@ -238,11 +240,13 @@ public class DateTimeAPITest {
 	}
 	
 	/**
-	 * Generates a sequence of LOCAL, adding a number of minutes to a LOCAL.
+	 * Generates a sequence of LocalDateTime, adding a number of minutes to a LocalDateTime variable.
 	 * LocalDateTime + minutes[0], LocalDateTime + minutes[1], ... 
+	 * <p>
+	 * Increment aren't accumulative 
 	 * 
 	 * @param start   LocalDateTime to start adding minutes.
-	 * @param minutes Array of Integer with the minutes to add to LocalDateTime
+	 * @param minutes Array of Integer with the minutes to add to LocalDateTime.
 	 * @return Set of LocalDateTime
 	 */
 	private Set<LocalDateTime> dateTimePlusArray(LocalDateTime start, int[] minutes) {
@@ -301,6 +305,21 @@ public class DateTimeAPITest {
 
 		assertThat(dateTimePlusArray(localDateTimeNow, null)).isNull();
 		assertThat(dateTimePlusArray(localDateTimeNow, minutesEmpty)).isNull();
+	}
+	
+	@Test
+	public void test013_DateTimeSort() {
+		
+		// LocalDateTime is immutable 
+		LocalDateTime now = LocalDateTime.parse("2019-03-13T16:00:00");
+		Set<LocalDateTime> setDateTime = dateTimePlusArray(now, new int[]{ 15, 15, -15, 20, 5, -30}); // +15min x 2
+		List<LocalDateTime> listDateTime = new ArrayList<>(setDateTime);
+		Collections.sort(listDateTime);
+				
+		assertThat(setDateTime).containsOnlyOnce(LocalDateTime.parse("2019-03-13T16:15:00")); // only one +15min
+		assertThat(listDateTime).isSorted();
+		assertThat(listDateTime).containsAll(setDateTime);
+		
 	}
 
 }
