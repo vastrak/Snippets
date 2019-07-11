@@ -15,6 +15,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -238,12 +239,13 @@ public class DateTimeAPITest {
 		assertThat(instant.getNano()).isEqualTo(localDateTime.getNano());
 
 	}
-	
+
 	/**
-	 * Generates a sequence of LocalDateTime, adding a number of minutes to a LocalDateTime variable.
-	 * LocalDateTime + minutes[0], LocalDateTime + minutes[1], ... 
+	 * Generates a sequence of LocalDateTime, adding a number of minutes to a
+	 * LocalDateTime variable. LocalDateTime + minutes[0], LocalDateTime +
+	 * minutes[1], ...
 	 * <p>
-	 * Increment aren't accumulative 
+	 * Increment aren't accumulative
 	 * 
 	 * @param start   LocalDateTime to start adding minutes.
 	 * @param minutes Array of Integer with the minutes to add to LocalDateTime.
@@ -306,20 +308,54 @@ public class DateTimeAPITest {
 		assertThat(dateTimePlusArray(localDateTimeNow, null)).isNull();
 		assertThat(dateTimePlusArray(localDateTimeNow, minutesEmpty)).isNull();
 	}
-	
+
 	@Test
 	public void test013_DateTimeSort() {
-		
-		// LocalDateTime is immutable 
+
+		// LocalDateTime is immutable
 		LocalDateTime now = LocalDateTime.parse("2019-03-13T16:00:00");
-		Set<LocalDateTime> setDateTime = dateTimePlusArray(now, new int[]{ 15, 15, -15, 20, 5, -30}); // +15min x 2
+		Set<LocalDateTime> setDateTime = dateTimePlusArray(now, new int[] { 15, 15, -15, 20, 5, -30 }); // +15min x 2
 		List<LocalDateTime> listDateTime = new ArrayList<>(setDateTime);
 		Collections.sort(listDateTime);
-				
+
 		assertThat(setDateTime).containsOnlyOnce(LocalDateTime.parse("2019-03-13T16:15:00")); // only one +15min
 		assertThat(listDateTime).isSorted();
 		assertThat(listDateTime).containsAll(setDateTime);
-		
+
+	}
+
+	@Test
+	public void test014_FormetStyles() {
+
+		LocalDate localDate = LocalDate.of(2019, 7, 11);
+		// jueves 11 de julio de 2019
+		String localDateFull = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).format(localDate);
+		// 11 de julio de 2019
+		String localDateLong = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).format(localDate);
+		// 11-jul-2019
+		String localDateMedium = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).format(localDate);
+		// 11/07/19
+		String localDateShort = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).format(localDate);
+
+		ZonedDateTime zonedDateTime = ZonedDateTime.of(localDate, LocalTime.of(16, 05, 00), ZoneId.of("Europe/Madrid"));
+		String zonedDateFull = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).format(zonedDateTime);
+		// jueves 11 de julio de 2019 16H05' CEST
+
+		// this is ofLocalizedDate
+		LocalDate retLocalDate = LocalDate
+				.from(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).parse("jueves 11 de julio de 2019"));
+		// and this is ofLacalizedDateTime
+		ZonedDateTime retZonedDate = ZonedDateTime.from(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL)
+				.parse("jueves 11 de julio de 2019 16H05' CEST"));
+
+		assertThat(localDate).isEqualTo(retLocalDate);
+		assertThat(zonedDateTime).isEqualTo(retZonedDate);
+
+		String data = String.format("LocalDate: %s\nFull: %s\nLong: %s\nMedium: %s\nShort: %s\n", localDate,
+				localDateFull, localDateLong, localDateMedium, localDateShort);
+		data+= String.format("ZonedDateTime: %s\nFull: %s\n", zonedDateTime, zonedDateFull);
+		logger.info(data);
+
 	}
 
 }
