@@ -274,7 +274,7 @@ public class DateTimeAPITest {
 		// start DateTime
 		LocalDateTime localDateTime = LocalDateTime.parse("2019-03-13T16:00:00");
 		// minutes to add
-		int[] minutes = { 1, 5, 10, 20, 30, 40 };
+		int[] minutes = { 1, 5, 10, 20, 30, 40, -10 };
 		Set<LocalDateTime> set = dateTimePlusArray(localDateTime, minutes);
 
 		// expected!
@@ -284,9 +284,10 @@ public class DateTimeAPITest {
 		LocalDateTime next4 = LocalDateTime.parse("2019-03-13T16:20:00");
 		LocalDateTime next5 = LocalDateTime.parse("2019-03-13T16:30:00");
 		LocalDateTime next6 = LocalDateTime.parse("2019-03-13T16:40:00");
+		LocalDateTime next7 = LocalDateTime.parse("2019-03-13T15:50:00");
 
 		// check!
-		assertThat(set).isNotNull().contains(next1, next2, next3, next4, next5, next6).hasSize(6);
+		assertThat(set).isNotNull().contains(next1, next2, next3, next4, next5, next6, next7).hasSize(7);
 		assertThat(dateTimePlusArray(localDateTime, null)).isNull();
 		int[] v = {};
 		assertThat(dateTimePlusArray(localDateTime, v)).isNull();
