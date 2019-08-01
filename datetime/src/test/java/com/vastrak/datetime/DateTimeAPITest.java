@@ -1,8 +1,10 @@
 package com.vastrak.datetime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,11 +30,22 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DateTimeAPITest {
+
+	@Mock
+	Clock mock_Clock;
+
+	// Tells Mockito to create the mocks based on the @Mock annotation
+	@Rule
+	public MockitoRule mockitoRule = MockitoJUnit.rule();
 
 	private static final Log logger = LogFactory.getLog(DateTimeAPITest.class);
 
@@ -141,7 +154,7 @@ public class DateTimeAPITest {
 	}
 
 	@Test
-	public void test004_Instant() {
+	public void test005_Instant() {
 
 		// This class is immutable and thread-safe.
 		// Output format is ISO-8601
@@ -163,7 +176,7 @@ public class DateTimeAPITest {
 	}
 
 	@Test
-	public void test005_DurationBetweenTwoInstants() {
+	public void test006_DurationBetweenTwoInstants() {
 
 		// A Duration measures an amount of time using time-based values (seconds,
 		// nanoseconds).
@@ -183,7 +196,7 @@ public class DateTimeAPITest {
 	}
 
 	@Test
-	public void test006_ChronoUnitBetweenTwoInstants() {
+	public void test007_ChronoUnitBetweenTwoInstants() {
 
 		// The ChronoUnit enum, defines the units used to measure time.
 		// The ChronoUnit.between method is useful when you want to measure an amount
@@ -354,9 +367,38 @@ public class DateTimeAPITest {
 
 		String data = String.format("LocalDate: %s\nFull: %s\nLong: %s\nMedium: %s\nShort: %s\n", localDate,
 				localDateFull, localDateLong, localDateMedium, localDateShort);
-		data+= String.format("ZonedDateTime: %s\nFull: %s\n", zonedDateTime, zonedDateFull);
+		data += String.format("ZonedDateTime: %s\nFull: %s\n", zonedDateTime, zonedDateFull);
 		logger.info(data);
 
+	}
+
+	@Test
+	public void test015_FixedClock() {
+
+		String inst_expected = "2009-03-17T16:00:00Z";
+		Clock clock = Clock.fixed(Instant.parse(inst_expected), ZoneId.of("UTC"));
+
+		Instant instant = Instant.now(clock);
+
+		assertThat(instant.toString()).isEqualTo(inst_expected);
+	}
+
+	@Test
+	public void test016_OverrideClockForTestingWithMock() {
+
+		String inst1_expected = "2009-03-17T16:00:00Z";
+		String inst2_expected = "2009-03-17T16:00:25Z"; // +25 seg.
+		String inst3_expected = "2009-03-17T16:00:50Z"; // +25 seg. 
+		Instant inst1 = Instant.parse(inst1_expected);
+		Instant inst2 = inst1.plusSeconds(25);
+		Instant inst3 = inst2.plusSeconds(25);
+		
+		when(mock_Clock.instant()).thenReturn(inst1, inst2, inst3);
+		
+		assertThat(mock_Clock.instant().toString()).isEqualTo(inst1_expected);
+		assertThat(mock_Clock.instant().toString()).isEqualTo(inst2_expected);
+		assertThat(mock_Clock.instant().toString()).isEqualTo(inst3_expected);
+		
 	}
 
 }
